@@ -1,9 +1,10 @@
+%% Queue implementation using 2 stacks (inbox and outbox).
 -module(queue_lib).
 -compile(export_all).
 
 -include_lib("eunit/include/eunit.hrl").
 
--record(queue, {list1 = [] :: list(), list2 = [] :: list()}).
+-record(queue, {inbox = [] :: list(), outbox = [] :: list()}).
 
 -type queue() :: #queue{}.
 
@@ -14,23 +15,79 @@ new() ->
 -spec is_queue(queue()) -> boolean().
 is_queue(MaybeQueue) -> is_record(MaybeQueue, queue).
 
-get_list1(Queue) -> Queue#queue.list1.
-set_list1(List, Queue) -> Queue#queue{list1 = List}.
+-spec get_inbox(queue()) -> list().
+get_inbox(Queue) -> Queue#queue.inbox.
+
+-spec set_inbox(list(), queue()) -> queue(). 
+set_inbox(NewInbox, Queue) -> Queue#queue{inbox = NewInbox}.
+
+-spec get_outbox(queue()) -> list().
+get_outbox(Queue) -> Queue#queue.outbox.
+
+-spec set_outbox(list(), queue()) -> queue(). 
+set_outbox(NewOutbox, Queue) -> Queue#queue{outbox = NewOutbox}.
+
+-spec len_inbox(queue()) -> integer().
+len_inbox(Queue) -> length(get_inbox(Queue)).
+
+-spec len_outbox(queue()) -> integer().
+len_outbox(Queue) -> length(get_outbox(Queue)).
 
 -spec len(queue()) -> integer().
-len(Queue) -> length(get_list1(Queue)).
+len(Queue) -> len_inbox(Queue) + len_outbox(Queue).
+
+-spec push_to_inbox(term(), queue()) -> queue().
+push_to_inbox(Item, Queue) -> 
+	Inbox = get_inbox(Queue),
+	UpdatedInbox = [Item | Inbox],
+	set_inbox(UpdatedInbox, Queue). 
 
 -spec in(term(), queue()) -> queue().
 in(Item, Queue) -> 
-	List = get_list1(Queue),
-	UpdatedList = List ++ [Item], 	
-	set_list1(UpdatedList, Queue).
+	push_to_inbox(Item, Queue).
+
+-spec is_empty(queue()) -> boolean().
+is_empty(Queue) -> len(Queue) == 0. 
+
+-spec is_empty_outbox(queue()) -> boolean().
+is_empty_outbox(Queue) -> len_outbox(Queue) == 0.
+
+copy_list(List) ->
+	copy_list(List, []).
+
+copy_list([], ResultList) ->
+	ResultList;
+copy_list([Item|SourceListTail], DestinationList) ->
+	copy_list(SourceListTail, [Item | DestinationList]). 
+
+set_inbox_and_outbox(Inbox, Outbox, Queue) ->
+	UpdatedQueue = set_inbox(Inbox, Queue),
+	FinalQueue = set_outbox(Outbox, UpdatedQueue),
+	FinalQueue.
+
+move_inbox_to_outbox(Queue) ->
+	Inbox = get_inbox(Queue),
+	NewOutbox = copy_list(Inbox),
+	set_inbox_and_outbox([], NewOutbox, Queue). 
+
+pop_from_outbox(Queue) -> 
+	case is_empty_outbox(Queue) of
+		true ->
+			UpdatedQueue = move_inbox_to_outbox(Queue),
+			pop_from_outbox(UpdatedQueue);
+		false -> 
+			[Item | OutboxTail] = get_outbox(Queue),
+			UpdatedQueue = set_outbox(OutboxTail, Queue),
+			{Item, UpdatedQueue}
+	end.
 
 -spec out(queue()) -> {{value, term()}, queue()}.
 out(Queue) ->
-	[Item|Rest] = get_list1(Queue),
-	UpdatedQueue = set_list1(Rest, Queue),
-	{{value, Item}, UpdatedQueue}.
+	case is_empty(Queue) of
+		true -> {empty, Queue};
+		false -> {Item, UpdatedQueue} = pop_from_outbox(Queue),
+			 {{value, Item}, UpdatedQueue}
+	end.
 
 is_queue_test() ->
 	Queue = new(),
