@@ -1,6 +1,6 @@
 %% Queue implementation using 2 stacks (inbox and outbox).
 -module(queue_lib).
--compile(export_all).
+-export([new/0, is_queue/1, len/1, in/2, is_empty/1, out/1]).
 
 -include_lib("eunit/include/eunit.hrl").
 
