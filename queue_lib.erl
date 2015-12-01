@@ -1,6 +1,6 @@
 %% Queue implementation using 2 stacks (inbox and outbox).
 -module(queue_lib).
--export([new/0, is_queue/1, len/1, in/2, is_empty/1, out/1, in_r/2]).
+-export([new/0, is_queue/1, len/1, in/2, is_empty/1, out/1, in_r/2, from_list/1]).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -100,6 +100,11 @@ out(Queue) ->
 			 {{value, Item}, UpdatedQueue}
 	end.
 
+-spec from_list(list()) -> queue().
+from_list(L) ->
+	Q  = new(),
+	set_outbox(L, Q).
+
 is_queue_test() ->
 	Queue = new(),
 	?assert(is_queue(Queue)),
@@ -126,3 +131,8 @@ in_r_out_test() ->
 	{{value, 1}, Q5} = out(Q4),
 	{{value, 2}, _Q6} = out(Q5).
 
+from_list_test() ->
+	L = [1,2,3,4],
+	Q = from_list(L),
+	?assertEqual(4, len(Q)),
+	{{value, 1}, _} = out(Q).
