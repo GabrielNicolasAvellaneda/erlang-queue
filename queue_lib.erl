@@ -1,6 +1,6 @@
 %% Queue implementation using 2 stacks (inbox and outbox).
 -module(queue_lib).
--export([new/0, is_queue/1, len/1, in/2, is_empty/1, out/1]).
+-export([new/0, is_queue/1, len/1, in/2, is_empty/1, out/1, in_r/2]).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -42,9 +42,20 @@ push_to_inbox(Item, Queue) ->
 	UpdatedInbox = [Item | Inbox],
 	set_inbox(UpdatedInbox, Queue). 
 
+-spec push_to_outbox(term(), queue()) -> queue().
+push_to_outbox(Item, Queue) ->
+	Outbox = get_outbox(Queue),
+	UpdatedOutbox = [Item | Outbox],
+	set_outbox(UpdatedOutbox, Queue).
+
 -spec in(term(), queue()) -> queue().
 in(Item, Queue) -> 
 	push_to_inbox(Item, Queue).
+
+%% @doc Inserts Item at the from of the queue Q1. Returnst he resulting queue Q2.
+-spec in_r(term(), queue()) -> queue().
+in_r(Item, Queue) ->
+	push_to_outbox(Item, Queue).
 
 -spec is_empty(queue()) -> boolean().
 is_empty(Queue) -> len(Queue) == 0. 
@@ -105,4 +116,13 @@ in_out_test() ->
 	?assertEqual(2, len(Queue3)),
 	{{value, 1}, Queue4} = out(Queue3),
 	?assertMatch({{value, 2}, _}, out(Queue4)).
+
+in_r_out_test() ->
+	Q0 = new(),
+	Q1 = in(1, Q0),
+	Q2 = in(2, Q1),
+	Q3 = in_r(at_the_top, Q2),
+	{{value, at_the_top}, Q4} = out(Q3),
+	{{value, 1}, Q5} = out(Q4),
+	{{value, 2}, _Q6} = out(Q5).
 
