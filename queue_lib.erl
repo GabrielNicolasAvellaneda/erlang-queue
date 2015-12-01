@@ -1,6 +1,6 @@
 %% Queue implementation using 2 stacks (inbox and outbox).
 -module(queue_lib).
--export([new/0, is_queue/1, len/1, in/2, is_empty/1, out/1, in_r/2, from_list/1]).
+-export([new/0, is_queue/1, len/1, in/2, is_empty/1, out/1, in_r/2, from_list/1, to_list/1]).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -105,6 +105,13 @@ from_list(L) ->
 	Q  = new(),
 	set_outbox(L, Q).
 
+-spec to_list(queue()) -> list().
+to_list(Queue) ->
+	Outbox = get_outbox(Queue),
+	Inbox = get_inbox(Queue),
+	ReversedInbox = lists:reverse(Inbox),
+	Outbox ++ ReversedInbox.
+
 is_queue_test() ->
 	Queue = new(),
 	?assert(is_queue(Queue)),
@@ -136,3 +143,12 @@ from_list_test() ->
 	Q = from_list(L),
 	?assertEqual(4, len(Q)),
 	{{value, 1}, _} = out(Q).
+
+to_list_test() ->
+	L1 = [1,2,3,4],
+	Q = from_list(L1),
+	{{value, 1}, Q1} = out(Q),
+	Q2 = in(5, Q1),
+	L2 = to_list(Q2),
+	?assertEqual([2,3,4,5], L2).
+
