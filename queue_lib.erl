@@ -1,6 +1,6 @@
 %% Queue implementation using 2 stacks (inbox and outbox).
 -module(queue_lib).
--export([new/0, is_queue/1, len/1, in/2, is_empty/1, out/1, in_r/2, from_list/1, to_list/1]).
+-export([new/0, is_queue/1, len/1, in/2, is_empty/1, out/1, in_r/2, from_list/1, to_list/1, reverse/1]).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -112,6 +112,13 @@ to_list(Queue) ->
 	ReversedInbox = lists:reverse(Inbox),
 	Outbox ++ ReversedInbox.
 
+%% @doc Returns a queue Q2 that contains the items of the Q1 in reverse order.
+-spec reverse(queue()) -> queue().
+reverse(Queue) ->
+	L = to_list(Queue),
+	ReversedList = lists:reverse(L),
+	from_list(ReversedList).	
+
 is_queue_test() ->
 	Queue = new(),
 	?assert(is_queue(Queue)),
@@ -151,4 +158,11 @@ to_list_test() ->
 	Q2 = in(5, Q1),
 	L2 = to_list(Q2),
 	?assertEqual([2,3,4,5], L2).
+
+reverse_test() ->
+	Q1 = in(4, in(3, in(2, in(1, new())))),
+	Q2 = reverse(Q1),
+       	?assertEqual([4,3,2,1], to_list(Q2)). 
+
+
 
